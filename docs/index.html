@@ -123,7 +123,9 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
 .kv span{color:var(--muted)}
 .prog{height:4px;background:var(--chip);border-radius:2px;overflow:hidden;margin-top:6px}
 .prog i{display:block;height:100%;background:var(--accent);width:0}
-td.dpsc{min-width:170px}
+td.dpsc{min-width:130px}
+@media (max-width:1100px) and (min-width:1001px){.hide-t{display:none}}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}.controls{position:static}}
 @media (max-width:640px){td.dpsc{min-width:96px}}
 td.w a.wk{color:var(--muted);font-weight:400;font-size:13px;padding:0 3px}
 td.w a.wk:hover{color:var(--accent)}
@@ -210,7 +212,7 @@ td.w a.wk:hover{color:var(--accent)}
       <div class="prog" id="prog" hidden><i></i></div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>#</th><th>Weapon</th><th class="hide-s">Move</th><th class="n">DPS</th><th class="hide-s" title="Str/Dex/Int/Fai/Arc">Stats</th><th class="n hide-s">AR</th><th class="n hide-m">Other moves</th></tr></thead>
+          <thead><tr><th>#</th><th>Weapon</th><th class="hide-s">Move</th><th class="n">DPS</th><th class="hide-s hide-t" title="Str/Dex/Int/Fai/Arc">Stats</th><th class="n hide-s hide-t">AR</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -321,23 +323,22 @@ function render() {
   list.slice(0, shown).forEach((r, i) => {
     const w = D.weapons[r.k];
     const parts = o.boss != null ? `<small class="parts">${r.ttk ? r.ttk.toFixed(1) + " s to kill" : ""}${r.bleed ? " · bleed " + fmt(r.bleed) : ""}${r.frost ? " · frost " + fmt(r.frost) : ""}</small>` : "";
-    const other = Object.entries(r.per).filter(([k]) => k !== r.move).map(([k, v]) => `${ER.MOVES[k]} ${fmt(v)}`).join("<br>");
     html.push(`<tr class="main${openK === r.k ? " open" : ""}" data-k="${r.k}">
       <td class="rank"><span class="tw">›</span> ${i + 1}</td>
       <td class="w"><a>${esc(w.n)}</a> <a class="wk" href="${wiki(w.n)}" target="_blank" rel="noopener" title="Fextralife wiki">↗</a><small>${w.i} · ${w.c} +${w.up}<span class="show-s"> · ${ER.MOVES[r.move]}</span></small></td>
       <td class="hide-s"><span class="mv">${ER.MOVES[r.move]}</span></td>
       <td class="n dpsc"><div class="dps"><i style="width:${(r.dps / max * 100).toFixed(1)}%"></i><span>${fmt(r.dps)}</span>${parts}</div></td>
-      <td class="hide-s">${r.stats.join("/")}</td>
-      <td class="n hide-s">${fmt(r.ar.reduce((a, b) => a + b, 0))}</td>
-      <td class="n hide-m alt">${other}</td></tr>`);
-    if (openK === r.k) html.push(`<tr class="detail"><td colspan="7">${detail(r)}</td></tr>`);
+      <td class="hide-s hide-t">${r.stats.join("/")}</td>
+      <td class="n hide-s hide-t">${fmt(r.ar.reduce((a, b) => a + b, 0))}</td></tr>`);
+    if (openK === r.k) html.push(`<tr class="detail"><td colspan="6">${detail(r)}</td></tr>`);
   });
-  $("#rows").innerHTML = html.join("") || `<tr><td colspan="7" class="empty">Nothing to show.</td></tr>`;
+  $("#rows").innerHTML = html.join("") || `<tr><td colspan="6" class="empty">Nothing to show.</td></tr>`;
   $("#more").hidden = list.length <= shown;
 }
 
 function detail(r) {
   const w = D.weapons[r.k], o = readOpts(), T = target(o);
+  const other = Object.entries(r.per).filter(([k]) => k !== r.move).map(([k, v]) => `${ER.MOVES[k]} ${fmt(v)}`).join(" · ");
   let res;
   if (o.mode === "opt") res = ER.optimize(D, w, r.move, o.base, o.budget, T, 1);
   else res = ER.evalFixed(D, w, r.move, o.stats, T);
@@ -365,7 +366,7 @@ function detail(r) {
       <h3>${esc(w.n)} (${w.i}) · ${ER.MOVES[r.move]} · <a href="${wiki(w.n)}" target="_blank" rel="noopener">wiki ↗</a></h3>
       <div class="kv"><span>Stats</span><b>${res.stats.join(" / ")}</b><span>Attack rating</span><b>${ar}</b>
         <span>Requirements</span><b>${req || "none"}${w.pair ? " · paired (no 2H Str bonus)" : ""}</b><span>Status</span><b>${status}</b>
-        <span>DPS</span><b>${fmt(res.dps)}</b></div>${boss}
+        <span>DPS</span><b>${fmt(res.dps)}</b>${other ? `<span>Other moves</span><b>${other}</b>` : ""}</div>${boss}
       <h3>Attack chain</h3>
       <p>${steps.length} steps, ${total} frames (${(total / 60).toFixed(2)} s), ${hits} hits. Each block is one step, as wide as its frames until the next attack can start; dots are hits.</p>
       <svg class="chart" viewBox="0 0 ${SW} 50">${bars}</svg>
