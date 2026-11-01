@@ -232,7 +232,7 @@ td.w a.wk:hover{color:var(--accent)}
   </footer>
 </div>
 
-<script src="calc.js?v=1"></script>
+<script src="calc.js?v=2"></script>
 <script>
 "use strict";
 const $ = (s) => document.querySelector(s);
@@ -242,7 +242,8 @@ const CLASSES = {   // level, [vig, mind, end], [str, dex, int, fai, arc]
   Bandit: [5, [10, 11, 10], [9, 13, 9, 8, 14]], Astrologer: [6, [9, 15, 9], [8, 12, 16, 7, 9]],
   Prophet: [7, [10, 14, 8], [11, 10, 7, 16, 10]], Samurai: [9, [12, 11, 13], [12, 15, 9, 8, 8]],
   Prisoner: [9, [11, 12, 11], [11, 14, 14, 6, 9]], Confessor: [10, [10, 13, 10], [12, 12, 9, 14, 9]],
-};
+  "Heavy Knight": [10, [14, 8, 17], [15, 11, 7, 8, 9]], "Knight of Idus": [7, [10, 12, 11], [13, 15, 8, 11, 6]],
+};   // read from CharaInitParam 3000-3011 (the last two came with the Tarnished Pack)
 const EL = ["Phys", "Mag", "Fire", "Ltn", "Holy"];
 let D = null, worker = null, reqId = 0, rows = [], shown = 50, mode = "opt", openK = null;
 
@@ -334,16 +335,79 @@ function render() {
   });
   $("#rows").innerHTML = html.join("") || `<tr><td colspan="6" class="empty">Nothing to show.</td></tr>`;
   $("#more").hidden = list.length <= shown;
+  hookDetail();
+}
+
+let openMove = null, ddCache = null;
+const SN = ER.STATS;
+
+// leveling path + "respec" best spread at sampled levels, cached per weapon / move / settings
+function detailData(r, move) {
+  const o = readOpts(), ck = JSON.stringify([r.k, move, readOpts(true)]);
+  if (ddCache && ddCache.ck === ck) return ddCache.d;
+  const w = D.weapons[r.k], T = target(o), opt = o.mode === "opt";
+  const base = opt ? o.base : o.stats, now = opt ? o.budget : 0;
+  const maxB = opt ? Math.min(Math.max(now + 30, 60), 300) : 60;
+  const path = ER.levelPath(D, w, move, base, maxB, T);
+  let d = { path, pts: [], now, opt, off: opt ? +$("#sl").value - o.budget : 0, base, T };
+  if (path && path.points.length) {
+    const last = path.points[path.points.length - 1].pts, samples = [path.cost];
+    for (let p = Math.floor(path.cost / 5) * 5 + 5; p <= maxB; p += 5) samples.push(p);
+    for (const p of samples) {
+      const pp = path.points.filter((x) => x.pts <= p).pop();
+      const best = ER.optimize(D, w, move, base, p, T, 1);
+      d.pts.push({ p, path: pp, best: best ? best.dps : null, capped: p > last });
+    }
+  }
+  ddCache = { ck, d };
+  return d;
+}
+
+const xLabel = (d, p) => (d.opt ? `RL ${d.off + p}` : `+${p} pts`);
+
+function phases(chunks) {
+  const out = [];
+  for (const c of chunks) {
+    if (c.req) continue;
+    const last = out[out.length - 1], small = c.to - c.from <= 3;
+    if (last && (last[c.stat] !== undefined || small)) last[c.stat] = c.to;
+    else out.push({ [c.stat]: c.to });
+  }
+  return out.map((ph) => Object.keys(ph).map(Number).sort((a, b) => a - b).map((i) => `${SN[i]} ${ph[i]}`).join(" + "));
+}
+
+function chartSvg(d) {
+  const small = window.innerWidth < 640;
+  const W = small ? 360 : 640, H = small ? 210 : 230, L = 44, Rr = 10, Tp = 12, B = 28;
+  const P = d.pts.filter((x) => x.path);
+  if (P.length < 2) return "";
+  const xs = P.map((x) => x.p), ys = P.flatMap((x) => [x.path.dps, x.best || 0]).filter((v) => v > 0);
+  const x0 = xs[0], x1 = xs[xs.length - 1];
+  let y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const pad = (y1 - y0) * 0.08 || 10; y0 = Math.max(0, y0 - pad); y1 += pad;
+  const X = (v) => L + (v - x0) / (x1 - x0 || 1) * (W - L - Rr), Y = (v) => Tp + (1 - (v - y0) / (y1 - y0)) * (H - Tp - B);
+  const nice = (span) => { const st = span / 4, m = Math.pow(10, Math.floor(Math.log10(st))); return [1, 2, 5, 10].map((k) => k * m).find((k) => k >= st); };
+  const ys1 = nice(y1 - y0), xs1 = Math.max(5, nice((x1 - x0) * (small ? 0.8 : 1.2)));
+  let g = "";
+  for (let v = Math.ceil(y0 / ys1) * ys1; v <= y1; v += ys1) g += `<line class="grid" x1="${L}" x2="${W - Rr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  for (let v = Math.ceil((x0 + d.off) / xs1) * xs1; v <= x1 + d.off; v += xs1) g += `<text x="${X(v - d.off)}" y="${H - 10}" text-anchor="middle">${xLabel(d, v - d.off)}</text>`;
+  const line = (ok, val) => P.filter(ok).map((x, i) => `${i ? "L" : "M"}${X(x.p).toFixed(1)},${Y(val(x)).toFixed(1)}`).join("");
+  const pl = line(() => true, (x) => x.path.dps), ol = line((x) => x.best, (x) => x.best);
+  let now = "";
+  if (d.opt && d.now >= x0 && d.now <= x1) now = `<line class="now" x1="${X(d.now)}" x2="${X(d.now)}" y1="${Tp}" y2="${H - B}"/><text x="${X(d.now) + 4}" y="${Tp + 10}">you</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" data-x0="${x0}" data-x1="${x1}" data-l="${L}" data-r="${Rr}" data-w="${W}">${g}
+    <path class="ol" d="${ol}"/><path class="pl" d="${pl}"/>${now}
+    <line class="hv" x1="0" x2="0" y1="${Tp}" y2="${H - B}" visibility="hidden"/><circle class="dot" r="3.5" cx="0" cy="0" visibility="hidden"/>
+    <rect x="${L}" y="${Tp}" width="${W - L - Rr}" height="${H - Tp - B}" fill="transparent"/></svg>`;
 }
 
 function detail(r) {
   const w = D.weapons[r.k], o = readOpts(), T = target(o);
-  const other = Object.entries(r.per).filter(([k]) => k !== r.move).map(([k, v]) => `${ER.MOVES[k]} ${fmt(v)}`).join(" · ");
-  let res;
-  if (o.mode === "opt") res = ER.optimize(D, w, r.move, o.base, o.budget, T, 1);
-  else res = ER.evalFixed(D, w, r.move, o.stats, T);
-  const steps = D.moves[w.m][r.move];
-  // one bar per step: width = frames, ticks = hits
+  const avail = Object.keys(r.per), move = avail.includes(openMove) ? openMove : r.move;
+  const tabs = avail.length > 1 ? `<div class="tabs">${avail.map((m) => `<button data-move="${m}" class="${m === move ? "on" : ""}">${ER.MOVES[m]} · ${fmt(r.per[m])}</button>`).join("")}</div>` : "";
+  const res = o.mode === "opt" ? ER.optimize(D, w, move, o.base, o.budget, T, 1) : ER.evalFixed(D, w, move, o.stats, T);
+  if (!res) return `${tabs}<p>Not reachable with these settings.</p>`;
+  const steps = D.moves[w.m][move];
   const SW = 440, sc = (SW - 4) / steps.reduce((a, s) => a + s[0], 0);
   let xx = 2;
   const bars = steps.map((s, i) => {
@@ -355,48 +419,85 @@ function detail(r) {
   }).join("");
   const total = steps.reduce((a, s) => a + s[0], 0), hits = steps.reduce((a, s) => a + s[1].length, 0);
   const ar = res.ar.map((v, i) => (v ? `${EL[i]} ${fmt(v)}` : "")).filter(Boolean).join(" · ");
-  const req = w.req.map((v, i) => (v > 0 ? `${ER.STATS[i]} ${v}` : "")).filter(Boolean).join(" · ");
+  const req = w.req.map((v, i) => (v > 0 ? `${SN[i]} ${v}` : "")).filter(Boolean).join(" · ");
   const status = [w.b ? `bleed ${Math.round(w.b[0])}${w.lc ? " (Arc scaling)" : ""}` : "", w.f ? `frost ${Math.round(w.f[0])}` : ""].filter(Boolean).join(" · ") || "none";
   let boss = "";
   if (T.hp) boss = `<div class="kv"><span>Time to kill</span><b>${res.ttk.toFixed(1)} s</b>
       <span>Direct</span><b>${fmt(res.direct)} DPS</b>
       <span>Bleed</span><b>${res.procsB ? `${res.procsB} procs, ${fmt(res.bleed)} DPS` : "–"}</b>
       <span>Frost</span><b>${res.procsF ? `${res.procsF} procs, ${fmt(res.frost)} DPS` : "–"}</b></div>`;
-  return `<div class="det"><div>
-      <h3>${esc(w.n)} (${w.i}) · ${ER.MOVES[r.move]} · <a href="${wiki(w.n)}" target="_blank" rel="noopener">wiki ↗</a></h3>
+  const info = `<h3>${esc(w.n)} (${w.i}) · ${ER.MOVES[move]} · <a href="${wiki(w.n)}" target="_blank" rel="noopener">wiki ↗</a></h3>
       <div class="kv"><span>Stats</span><b>${res.stats.join(" / ")}</b><span>Attack rating</span><b>${ar}</b>
         <span>Requirements</span><b>${req || "none"}${w.pair ? " · paired (no 2H Str bonus)" : ""}</b><span>Status</span><b>${status}</b>
-        <span>DPS</span><b>${fmt(res.dps)}</b>${other ? `<span>Other moves</span><b>${other}</b>` : ""}</div>${boss}
-      <h3>Attack chain</h3>
+        <span>DPS</span><b>${fmt(res.dps)}</b></div>${boss}`;
+  const chain = `<h3>Attack chain</h3>
       <p>${steps.length} steps, ${total} frames (${(total / 60).toFixed(2)} s), ${hits} hits. Each block is one step, as wide as its frames until the next attack can start; dots are hits.</p>
-      <svg class="chart" viewBox="0 0 ${SW} 50">${bars}</svg>
-    </div><div>${o.mode === "opt" ? levelChart(w, r.move, o, T) : ""}</div></div>`;
+      <svg class="chart" viewBox="0 0 ${SW} 50">${bars}</svg>`;
+
+  const d = detailData(r, move);
+  if (!d.path || !d.path.points.length) return `${tabs}<div class="det"><div>${chain}</div><div>${info}</div></div>`;
+  const reqs = d.path.chunks.filter((c) => c.req).map((c) => `<span class="st req">${SN[c.stat]} ${c.to}${c.stat === 0 && move === "2h" && !w.pair ? " (2H)" : ""}</span>`);
+  const ph = phases(d.path.chunks).map((t) => `<span class="st">${esc(t)}</span>`);
+  const order = (reqs.length ? `<span class="ar">requirements</span> ${reqs.join(" ")} <span class="ar">→</span> ` : "") + ph.join(` <span class="ar">→</span> `);
+  const lastPts = d.path.points[d.path.points.length - 1].pts;
+  const rowsAt = new Map();
+  for (let p = d.path.cost; p <= d.pts[d.pts.length - 1].p; p++) if ((p + d.off) % 10 === 0 || p === d.path.cost) rowsAt.set(p, false);
+  if (d.opt && d.now >= d.path.cost) rowsAt.set(d.now, true);
+  const ms = [...rowsAt.keys()].sort((a, b) => a - b).map((p) => {
+    const pp = d.path.points.filter((x) => x.pts <= p).pop();
+    const best = ER.optimize(D, w, move, d.base, p, T, 1);
+    const gap = best ? (pp.dps / best.dps - 1) * 100 : 0;
+    return `<tr class="${rowsAt.get(p) ? "cur" : ""}"><td>${xLabel(d, p)}</td><td class="n">${pp.stats.join("/")}</td><td class="n">${fmt(pp.dps)}</td><td class="n">${gap > -0.05 ? "best" : gap.toFixed(1) + "%"}</td></tr>`;
+  }).join("");
+  const capNote = lastPts < d.pts[d.pts.length - 1].p ? `<p>After ${xLabel(d, lastPts)} no stat raises this weapon's DPS any more; spend the rest on Vigor, Endurance and so on.</p>` : "";
+  return `${tabs}<div class="det">
+    <div>
+      <h3>Leveling path · ${ER.MOVES[move]}</h3>
+      <div class="order">${order}</div>
+      <div class="legend"><span><i></i>following this path</span><span><i class="o"></i>best spread at that level (respec)</span></div>
+      ${chartSvg(d)}
+      <div class="readout">Hover or tap the chart.</div>
+      <p>Each point goes to the stat that adds the most DPS over the next few points, so every level builds on the last one.${d.opt ? " Vigor, Mind and Endurance stay as set on the left." : " Starts from the stats you entered."} "gap" = how far the path is behind a full respec at that level.</p>
+      ${capNote}
+      ${chain}
+    </div>
+    <div>${info}
+      <h3>Milestones</h3>
+      <table class="ms"><thead><tr><th>${d.opt ? "Level" : "Added"}</th><th class="n">Str/Dex/Int/Fai/Arc</th><th class="n">DPS</th><th class="n">gap</th></tr></thead><tbody>${ms}</tbody></table>
+    </div></div>`;
 }
 
-function levelChart(w, key, o, T) {
-  const pts = [];
-  for (let b = 0; b <= Math.max(o.budget + 40, 60); b += 4) {
-    const r = ER.optimize(D, w, key, o.base, b, T, 1);
-    if (r) pts.push([b, r.dps, r.stats]);
-  }
-  if (pts.length < 2) return "";
-  const lvl = (b) => +$("#sl").value - o.budget + b;
-  const W = 420, H = 200, P = 34;
-  const x0 = pts[0][0], x1 = pts[pts.length - 1][0], ymax = Math.max(...pts.map((p) => p[1])) * 1.08;
-  const X = (b) => P + (b - x0) / (x1 - x0) * (W - P - 8), Y = (v) => H - 22 - v / ymax * (H - 34);
-  const path = pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("");
-  const grid = [0.25, 0.5, 0.75, 1].map((f) => `<line class="grid" x1="${P}" x2="${W - 8}" y1="${Y(ymax * f / 1.08)}" y2="${Y(ymax * f / 1.08)}"/><text x="2" y="${Y(ymax * f / 1.08) + 4}">${fmt(ymax * f / 1.08)}</text>`).join("");
-  const ticks = [[x0, "start"], [Math.round((x0 + x1) / 2), "middle"], [x1, "end"]].map(([b, a]) => `<text x="${X(b)}" y="${H - 6}" text-anchor="${a}">RL ${lvl(b)}</text>`).join("");
-  const now = o.budget >= x0 ? `<line class="now" x1="${X(o.budget)}" x2="${X(o.budget)}" y1="10" y2="${H - 22}"/>` : "";
-  const rowsT = pts.filter((_, i) => i % 3 === 0).map((p) => `<tr${Math.abs(p[0] - o.budget) < 2 ? ' class="cur"' : ""}><td>RL ${lvl(p[0])}</td><td>${p[2].join("/")}</td><td class="n">${fmt(p[1])}</td></tr>`).join("");
-  return `<h3>DPS by rune level</h3><p>Best spread at each level (same class and Vigor/Mind/Endurance). Dashed line = your level.</p>
-    <svg class="chart" viewBox="0 0 ${W} ${H}">${grid}${ticks}${now}<path class="pl" d="${path}"/></svg>
-    <table class="ms"><thead><tr><th>Level</th><th>Str/Dex/Int/Fai/Arc</th><th class="n">DPS</th></tr></thead><tbody>${rowsT}</tbody></table>`;
+function hookDetail() {
+  const svg = document.querySelector("tr.detail svg.chart[data-x0]");
+  if (!svg) return;
+  const r = rows.find((x) => x.k === openK);
+  if (!r) return;
+  const move = Object.keys(r.per).includes(openMove) ? openMove : r.move;
+  const d = detailData(r, move), P = d.pts.filter((x) => x.path);
+  const x0 = +svg.dataset.x0, x1 = +svg.dataset.x1, L = +svg.dataset.l, Rr = +svg.dataset.r, W = +svg.dataset.w;
+  const hv = svg.querySelector(".hv"), dot = svg.querySelector(".dot"), out = svg.closest("tr.detail").querySelector(".readout");
+  const pl = svg.querySelector(".pl");
+  const mv = (ev) => {
+    const box = svg.getBoundingClientRect();
+    const cx = (ev.clientX - box.left) / box.width * W;
+    const v = x0 + (cx - L) / (W - L - Rr) * (x1 - x0);
+    let best = P[0]; for (const x of P) if (Math.abs(x.p - v) < Math.abs(best.p - v)) best = x;
+    const X = L + (best.p - x0) / (x1 - x0 || 1) * (W - L - Rr);
+    const len = pl.getTotalLength(); let lo = 0, hi = len;
+    for (let i = 0; i < 25; i++) { const m = (lo + hi) / 2; if (pl.getPointAtLength(m).x < X) lo = m; else hi = m; }
+    const pt = pl.getPointAtLength(lo);
+    hv.setAttribute("x1", X); hv.setAttribute("x2", X); hv.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y); dot.setAttribute("visibility", "visible");
+    out.textContent = `${xLabel(d, best.p)}: ${best.path.stats.join("/")} → ${fmt(best.path.dps)} DPS` + (best.best ? ` (best spread ${fmt(best.best)})` : "");
+  };
+  svg.addEventListener("pointermove", mv);
+  svg.addEventListener("pointerdown", mv);
+  svg.addEventListener("pointerleave", () => { hv.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); });
 }
 
 function init(data) {
   D = data;
-  worker = new Worker("worker.js?v=1");
+  worker = new Worker("worker.js?v=2");
   worker.postMessage({ data: D });
   $("#cls").innerHTML = Object.keys(CLASSES).map((c) => `<option>${c}</option>`).join("");
   $("#target").innerHTML = `<option value="flat">Flat defense</option>` + D.bosses.map((b, i) => `<option value="${i}">${esc(b.n)}</option>`).join("");
@@ -423,10 +524,12 @@ function init(data) {
   $("#more").onclick = () => { shown += 50; render(); };
   $("#rows").addEventListener("click", (ev) => {
     if (ev.target.closest("a[href]")) return;            // wiki links open, don't toggle
+    const tab = ev.target.closest(".tabs button");
+    if (tab) { openMove = tab.dataset.move; render(); return; }
     const tr = ev.target.closest("tr.main");
     if (!tr) return;
     const k = +tr.dataset.k;
-    openK = openK === k ? null : k;
+    openK = openK === k ? null : k; openMove = null;
     render();
   });
   run();

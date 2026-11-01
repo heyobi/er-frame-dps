@@ -159,7 +159,42 @@
     return Object.assign(evaluate(D, w, st, key, T), { stats: st.slice(), move: key });
   }
 
-  const api = { eff, ar, meets, evaluate, optimize, evalFixed, flatTarget, relevant, MOVES, STATS };
+  // Leveling path: requirements first, then one point at a time to whichever stat gives the most DPS per point
+  // (judged over the next 1 to 25 points, so slow-starting curves are not skipped). Every level extends the one
+  // before, so the spread never jumps around. Direct DPS breaks ties when status procs make the boss DPS flat.
+  function levelPath(D, w, key, base, maxBudget, T) {
+    if (!D.moves[w.m][key]) return null;
+    const nd = need(w, key), st = base.slice(), chunks = [];
+    let pts = 0;
+    for (let i = 0; i < 5; i++) if (st[i] < nd[i]) { pts += nd[i] - st[i]; chunks.push({ stat: i, from: st[i], to: nd[i], req: true }); st[i] = nd[i]; }
+    if (pts > maxBudget) return { cost: pts, points: [], chunks };
+    const score = (s) => { const r = evaluate(D, w, s, key, T); return [r.dps + r.direct * 1e-4, r]; };
+    const rel = relevant(w, T);
+    let [cur, res] = score(st);
+    const points = [{ pts, stats: st.slice(), dps: res.dps }];
+    while (pts + 1 <= maxBudget) {
+      let bg = 1e-9, pick = -1;
+      for (const i of rel) {
+        for (const c of [1, 5, 10, 15, 20, 25]) {
+          const t = st.slice(); t[i] = Math.min(99, t[i] + c);
+          if (t[i] === st[i]) continue;
+          const g = (score(t)[0] - cur) / (t[i] - st[i]);
+          if (g > bg) { bg = g; pick = i; }
+        }
+      }
+      if (pick < 0) break;
+      const from = st[pick];
+      st[pick]++; pts++;
+      [cur, res] = score(st);
+      const last = chunks[chunks.length - 1];
+      if (last && !last.req && last.stat === pick) last.to = st[pick];
+      else chunks.push({ stat: pick, from, to: st[pick] });
+      points.push({ pts, stats: st.slice(), dps: res.dps });
+    }
+    return { cost: points[0].pts, points, chunks };
+  }
+
+  const api = { eff, ar, meets, evaluate, optimize, evalFixed, levelPath, flatTarget, relevant, MOVES, STATS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ER = api;
 })(this);

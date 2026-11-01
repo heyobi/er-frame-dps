@@ -1,5 +1,5 @@
 // Ranks every weapon off the main thread so the page stays responsive.
-importScripts("calc.js?v=1");
+importScripts("calc.js?v=2");
 let D = null;
 onmessage = (ev) => {
   const m = ev.data;
