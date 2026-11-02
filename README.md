@@ -19,7 +19,28 @@ could check, but none of it has been timed in game yet. Corrections and in-game 
 
 ## Headline result
 
-_Tables are being generated, back in a few minutes._
+| # | Weapon | Infusion | Move | DPS | Hits per step | Str/Dex/Int/Fai/Arc |
+|---|---|---|---|---|---|---|
+| 1 | [Claws of Night](https://eldenring.wiki.fextralife.com/Claws+of+Night) | Standard | 2H R1 | 1,432 | 2-1-2-1-2-2 | 10/89/10/10/10 |
+| 2 | [Venomous Fang](https://eldenring.wiki.fextralife.com/Venomous+Fang) | Heavy | 2H R1 | 1,142 | 2-1-2-1-2-2 | 89/10/10/10/10 |
+| 3 | [Dane's Footwork](https://eldenring.wiki.fextralife.com/Dane's+Footwork) | Heavy | 2H R1 | 1,142 | 4-4-3-2-3-2 | 89/10/10/10/10 |
+| 4 | [Bloodhound Claws](https://eldenring.wiki.fextralife.com/Bloodhound+Claws) | Heavy | 2H R1 | 1,080 | 2-1-2-1-2-2 | 84/15/10/10/10 |
+| 5 | [Hookclaws](https://eldenring.wiki.fextralife.com/Hookclaws) | Keen | 2H R1 | 1,060 | 2-1-2-1-2-2 | 10/89/10/10/10 |
+| 6 | [Bloodfiend's Fork](https://eldenring.wiki.fextralife.com/Bloodfiend's+Fork) | Flame Art | Powerstance L1 | 1,055 | 2-2-2 | 14/10/10/80/15 |
+| 7 | [Dryleaf Arts](https://eldenring.wiki.fextralife.com/Dryleaf+Arts) | Heavy | 2H R1 | 1,043 | 2-4-3-2-3-2 | 89/10/10/10/10 |
+| 8 | [Raptor Talons](https://eldenring.wiki.fextralife.com/Raptor+Talons) | Keen | 2H R1 | 1,036 | 2-1-2-1-2-2 | 10/89/10/10/10 |
+| 9 | [Curseblade's Cirque](https://eldenring.wiki.fextralife.com/Curseblade's+Cirque) | Standard | 2H R1 | 1,036 | 2-2-2-1-2-2 | 19/80/10/10/10 |
+| 10 | [Cross-Naginata](https://eldenring.wiki.fextralife.com/Cross-Naginata) | Keen | Powerstance L1 | 1,021 | 2-2-2 | 19/80/10/10/10 |
+| 11 | [Sword Lance](https://eldenring.wiki.fextralife.com/Sword+Lance) | Heavy | Powerstance L1 | 1,015 | 2-2-2 | 88/11/10/10/10 |
+| 12 | [Bandit's Curved Sword](https://eldenring.wiki.fextralife.com/Bandit's+Curved+Sword) | Keen | Powerstance L1 | 998 | 2-2-2-2 | 19/80/10/10/10 |
+| 13 | [Beastman's Curved Sword](https://eldenring.wiki.fextralife.com/Beastman's+Curved+Sword) | Heavy | Powerstance L1 | 997 | 2-2-2-2 | 88/11/10/10/10 |
+| 14 | [Backhand Blade](https://eldenring.wiki.fextralife.com/Backhand+Blade) | Lightning | 2H R1 | 987 | 2-2-2-1-2-2 | 10/89/10/10/10 |
+| 15 | [Warped Axe](https://eldenring.wiki.fextralife.com/Warped+Axe) | Heavy | 2H R1 | 981 | 1-1-1-1-1 | 89/10/10/10/10 |
+| 16 | [Clayman's Harpoon](https://eldenring.wiki.fextralife.com/Clayman's+Harpoon) | Magic | Powerstance L1 | 971 | 2-2-2 | 12/10/87/10/10 |
+| 17 | [Grossmesser](https://eldenring.wiki.fextralife.com/Grossmesser) | Heavy | Powerstance L1 | 970 | 2-2-2-2 | 87/12/10/10/10 |
+| 18 | [Bolt of Gransax](https://eldenring.wiki.fextralife.com/Bolt+of+Gransax) | Standard | Powerstance L1 | 967 | 2-2-2 | 20/79/10/10/10 |
+| 19 | [Mantis Blade](https://eldenring.wiki.fextralife.com/Mantis+Blade) | Keen | Powerstance L1 | 945 | 2-2-2-2 | 19/80/10/10/10 |
+| 20 | [Falchion](https://eldenring.wiki.fextralife.com/Falchion) | Heavy | Powerstance L1 | 941 | 2-2-2-2 | 86/13/10/10/10 |
 
 Every weapon is at max upgrade (+25, or +10 for somber weapons), no buffs, no talismans. Starting from Wretch (all
 stats 10) at rune level 150 with 60 Vigor, 15 Mind and 25 Endurance leaves 79 points for Str/Dex/Int/Fai/Arc, and
@@ -33,7 +54,45 @@ The same search, but the target is a real boss: its HP, defense and absorption p
 scaling it has in game), its bleed and frost resistance, how much that resistance grows after each proc, and its
 own bleed and frost damage rates. DPS here means HP divided by time to kill, so status procs count.
 
-_Tables are being generated, back in a few minutes._
+**Malenia, Blade of Miquella**. 18,473 HP. Bleed 421, frost 306 (buildup to the first proc, area scaling included).
+
+| # | Weapon | Infusion | Move | DPS | Time to kill | Bleed DPS | Frost DPS | Str/Dex/Int/Fai/Arc |
+|---|---|---|---|---|---|---|---|---|
+| 1 | [Hookclaws](https://eldenring.wiki.fextralife.com/Hookclaws) | Cold | 2H R1 | 1,778 | 10.4 s | 387 | 506 | 10/79/20/10/10 |
+| 2 | [Bloodhound Claws](https://eldenring.wiki.fextralife.com/Bloodhound+Claws) | Cold | 2H R1 | 1,778 | 10.4 s | 387 | 506 | 51/36/22/10/10 |
+| 3 | [Raptor Talons](https://eldenring.wiki.fextralife.com/Raptor+Talons) | Cold | 2H R1 | 1,773 | 10.4 s | 386 | 505 | 10/79/20/10/10 |
+| 4 | [Claws of Night](https://eldenring.wiki.fextralife.com/Claws+of+Night) | Standard | 2H R1 | 1,603 | 11.5 s | 349 |  | 10/89/10/10/10 |
+| 5 | [Cross-Naginata](https://eldenring.wiki.fextralife.com/Cross-Naginata) | Cold | Powerstance L1 | 1,482 | 12.5 s | 322 | 316 | 16/73/20/10/10 |
+
+**Promised Consort Radahn**. 46,134 HP. Bleed 734, frost 734 (buildup to the first proc, area scaling included).
+
+| # | Weapon | Infusion | Move | DPS | Time to kill | Bleed DPS | Frost DPS | Str/Dex/Int/Fai/Arc |
+|---|---|---|---|---|---|---|---|---|
+| 1 | [Cross-Naginata](https://eldenring.wiki.fextralife.com/Cross-Naginata) | Cold | Powerstance L1 | 1,245 | 37.1 s | 246 | 244 | 16/73/20/10/10 |
+| 2 | [Spiked Spear](https://eldenring.wiki.fextralife.com/Spiked+Spear) | Cold | Powerstance L1 | 1,179 | 39.1 s | 233 | 308 | 45/44/20/10/10 |
+| 3 | [Bloodhound Claws](https://eldenring.wiki.fextralife.com/Bloodhound+Claws) | Cold | 2H R1 | 1,176 | 39.2 s | 233 | 308 | 47/23/39/10/10 |
+| 4 | [Hookclaws](https://eldenring.wiki.fextralife.com/Hookclaws) | Cold | 2H R1 | 1,165 | 39.6 s | 230 | 381 | 10/79/20/10/10 |
+| 5 | [Raptor Talons](https://eldenring.wiki.fextralife.com/Raptor+Talons) | Cold | 2H R1 | 1,165 | 39.6 s | 230 | 381 | 10/58/41/10/10 |
+
+**Messmer**. 38,982 HP. Bleed 435, frost 316 (buildup to the first proc, area scaling included).
+
+| # | Weapon | Infusion | Move | DPS | Time to kill | Bleed DPS | Frost DPS | Str/Dex/Int/Fai/Arc |
+|---|---|---|---|---|---|---|---|---|
+| 1 | [Hookclaws](https://eldenring.wiki.fextralife.com/Hookclaws) | Cold | 2H R1 | 1,869 | 20.9 s | 371 | 612 | 10/79/20/10/10 |
+| 2 | [Bloodhound Claws](https://eldenring.wiki.fextralife.com/Bloodhound+Claws) | Cold | 2H R1 | 1,869 | 20.9 s | 371 | 612 | 52/37/20/10/10 |
+| 3 | [Raptor Talons](https://eldenring.wiki.fextralife.com/Raptor+Talons) | Cold | 2H R1 | 1,869 | 20.9 s | 371 | 612 | 10/79/20/10/10 |
+| 4 | [Claws of Night](https://eldenring.wiki.fextralife.com/Claws+of+Night) | Standard | 2H R1 | 1,740 | 22.4 s | 518 |  | 10/89/10/10/10 |
+| 5 | [Venomous Fang](https://eldenring.wiki.fextralife.com/Venomous+Fang) | Cold | 2H R1 | 1,556 | 25.1 s |  | 510 | 35/54/20/10/10 |
+
+**Mohg, Lord of Blood**. 18,389 HP. Bleed 291, frost 654 (buildup to the first proc, area scaling included).
+
+| # | Weapon | Infusion | Move | DPS | Time to kill | Bleed DPS | Frost DPS | Str/Dex/Int/Fai/Arc |
+|---|---|---|---|---|---|---|---|---|
+| 1 | [Claws of Night](https://eldenring.wiki.fextralife.com/Claws+of+Night) | Standard | 2H R1 | 1,501 | 12.3 s | 350 |  | 10/89/10/10/10 |
+| 2 | [Bloodhound Claws](https://eldenring.wiki.fextralife.com/Bloodhound+Claws) | Occult | 2H R1 | 1,360 | 13.5 s | 423 |  | 14/15/10/10/80 |
+| 3 | [Hookclaws](https://eldenring.wiki.fextralife.com/Hookclaws) | Cold | 2H R1 | 1,335 | 13.8 s | 311 | 190 | 10/79/20/10/10 |
+| 4 | [Raptor Talons](https://eldenring.wiki.fextralife.com/Raptor+Talons) | Cold | 2H R1 | 1,316 | 14.0 s | 307 | 187 | 10/79/20/10/10 |
+| 5 | [Cross-Naginata](https://eldenring.wiki.fextralife.com/Cross-Naginata) | Occult | Powerstance L1 | 1,266 | 14.5 s | 393 |  | 16/20/10/10/73 |
 
 Full tables for these and other bosses: [`results/rankings.md`](results/rankings.md), or pick any of 27 bosses in the calculator.
 

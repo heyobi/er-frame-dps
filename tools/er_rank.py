@@ -82,7 +82,7 @@ if __name__ == "__main__":
         t0 = time.time(); rows = run(T, a.budget)
         print(f"### {tag}\n", file=sys.stdout)
         if T.get("hp"):
-            print(f"{T['hp']:,} HP. Bleed {'immune' if not T['bleed'] else round(T['bleed'][0])}, frost {'immune' if not T['frost'] else round(T['frost'][0])} (buildup to the first proc).\n")
+            print(f"{T['hp']:,} HP. Bleed {'immune' if not T['bleed'] else round(thresholds(T['bleed'])[0])}, frost {'immune' if not T['frost'] else round(thresholds(T['frost'])[0])} (buildup to the first proc, area scaling included).\n")
             print("| # | Weapon | Infusion | Move | DPS | Time to kill | Bleed DPS | Frost DPS | Str/Dex/Int/Fai/Arc |")
             print("|---|---|---|---|---|---|---|---|---|")
         else:

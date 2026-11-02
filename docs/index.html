@@ -75,7 +75,6 @@ td.w small{display:block;color:var(--muted);font-size:12px;font-weight:400}
 .mv{display:inline-block;background:var(--chip);border-radius:5px;padding:1px 7px;font-size:12.5px;color:var(--ink2)}
 .alt{color:var(--muted);font-size:12.5px}
 .more{display:block;margin:14px auto 0;background:var(--chip);border:0;color:var(--ink);border-radius:8px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
-@media (max-width:1420px){.hide-m{display:none}}
 td.mvc small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
 .show-s{display:none}
 @media (max-width:640px){.hide-s{display:none}td.rank .tw{display:none}td.rank{width:22px}.show-s{display:inline}td,th{padding:8px 5px}td.w{white-space:normal;min-width:130px}td{font-size:13px}}
@@ -123,24 +122,24 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
 .kv span{color:var(--muted)}
 .prog{height:4px;background:var(--chip);border-radius:2px;overflow:hidden;margin-top:6px}
 .prog i{display:block;height:100%;background:var(--accent);width:0}
-td.dpsc{min-width:130px}
-@media (max-width:1100px) and (min-width:1001px){.hide-t{display:none}}
-@media (max-width:1000px){.layout{grid-template-columns:1fr}.controls{position:static}}
-@media (max-width:640px){td.dpsc{min-width:96px}}
-td.w a.wk{color:var(--muted);font-weight:400;font-size:13px;padding:0 3px}
-td.w a.wk:hover{color:var(--accent)}
-.wip{display:inline-block;background:var(--chip);border-radius:6px;padding:2px 8px;font-size:12.5px;color:var(--ink2);margin-bottom:8px}
+.dps{position:relative}
+/* fit: no sideways scroll at any width */
+@media (min-width:1440px){.wrap{max-width:1320px}}
+@media (max-width:1439px){.hide-m{display:none}}
+@media (max-width:1100px){.layout{grid-template-columns:1fr}.controls{position:static}}
+@media (max-width:640px){td,th{padding:8px 3px}td{font-size:12.5px}td.rank{width:20px}}
+@media (max-width:420px){td.n:last-child{font-size:11px;letter-spacing:-.02em}td.w{min-width:110px!important}td.dps{min-width:0}}
+.tabs{flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="wip">Elden Ring · beta · <a href="https://heyobi.github.io/ds3-frame-dps/">Dark Souls III version</a></div>
     <h1>Elden Ring DPS calculator</h1>
     <p>Sustained light-attack DPS for every weapon and infusion at max upgrade: 1H R1, 2H R1 and powerstance L1 chains, with
       attack and cancel frames read from the game files (Shadow of the Erdtree included). Pick a boss to add its
       defenses, bleed and frost. Attack rating checked against ThomasJClark's calculator. Method and raw data:
-      <a href="https://github.com/heyobi/er-frame-dps">github.com/heyobi/er-frame-dps</a></p>
+      <a href="https://github.com/heyobi/er-frame-dps">github.com/heyobi/er-frame-dps</a><br>Also: <a href="https://heyobi.github.io/ds3-frame-dps/">Dark Souls III version</a></p>
   </header>
 
   <div class="layout">
@@ -186,21 +185,24 @@ td.w a.wk:hover{color:var(--accent)}
       </div>
 
       <div class="group">
-        <div class="label">Moves</div>
+        <div class="label">Attacks</div>
         <div class="checks" id="moves">
           <label><input type="checkbox" value="1h" checked>1H R1</label>
           <label><input type="checkbox" value="2h" checked>2H R1</label>
-          <label><input type="checkbox" value="ps" checked>Powerstance</label>
+          <label><input type="checkbox" value="ps" checked>Powerstance L1</label>
         </div>
       </div>
 
       <div class="group">
         <div class="label">Filter</div>
-        <select id="fcls"><option value="">All weapon classes</option></select>
-        <div style="height:6px"></div>
-        <select id="finf"><option value="">All infusions</option></select>
-        <div style="height:6px"></div>
         <input id="q" type="search" placeholder="Search weapon">
+        <div class="row2" style="margin-top:8px">
+          <select id="fcls"><option value="">All classes</option></select>
+          <select id="finf"><option value="">All infusions</option></select>
+        </div>
+        <div class="checks" style="margin-top:8px">
+          <label><input type="checkbox" id="bestOnly" checked>Best infusion per weapon</label>
+        </div>
       </div>
     </aside>
 
@@ -212,11 +214,14 @@ td.w a.wk:hover{color:var(--accent)}
       <div class="prog" id="prog" hidden><i></i></div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>#</th><th>Weapon</th><th class="hide-s">Move</th><th class="n">DPS</th><th class="hide-s hide-t" title="Str/Dex/Int/Fai/Arc">Stats</th><th class="n hide-s hide-t">AR</th></tr></thead>
+          <thead><tr>
+            <th>#</th><th>Weapon</th><th class="hide-s">Attack</th><th class="n hide-s hide-m">s / attack</th>
+            <th class="n hide-s hide-m">AR</th><th>DPS</th><th class="n"><span class="hide-s">Str/Dex/Int/Fai/Arc</span><span class="show-s">S/D/I/F/A</span></th>
+          </tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <button class="more" id="more" hidden>Show more</button>
+      <button class="more" id="more" hidden>Show all</button>
     </main>
   </div>
 
@@ -228,7 +233,7 @@ td.w a.wk:hover{color:var(--accent)}
       target then takes 20% more damage for 30 s. Resistance rises after every proc, and the boss's own bleed and frost
       damage rates apply. Buildup decay is not modeled, so frost may be a little high against bosses you can't hit
       constantly. Powerstance needs two copies of the weapon (paired weapons only need one).</p>
-    <p>Ranking uses 3-point steps when it searches stat spreads. Click a weapon for the exact spread, the attack chain and DPS by level.</p>
+    <p>The ranking searches stat spreads in 3-point steps; click a weapon for the exact spread, its leveling path with a DPS chart and its attack chain. Weapon names open the Fextralife wiki. The link in the address bar keeps your inputs, so you can share a build.</p>
   </footer>
 </div>
 
@@ -245,10 +250,36 @@ const CLASSES = {   // level, [vig, mind, end], [str, dex, int, fai, arc]
   "Heavy Knight": [10, [14, 8, 17], [15, 11, 7, 8, 9]], "Knight of Idus": [7, [10, 12, 11], [13, 15, 8, 11, 6]],
 };   // read from CharaInitParam 3000-3011 (the last two came with the Tarnished Pack)
 const EL = ["Phys", "Mag", "Fire", "Ltn", "Holy"];
-let D = null, worker = null, reqId = 0, rows = [], shown = 50, mode = "opt", openK = null;
+let D = null, worker = null, reqId = 0, rows = [], showAll = false, mode = "opt", openK = null;
 
-function save() { try { localStorage.setItem("er-calc", JSON.stringify(readOpts(true))); } catch (e) {} }
-function load() { try { return JSON.parse(localStorage.getItem("er-calc") || "null"); } catch (e) { return null; } }
+// inputs live in the address bar so a build can be shared, like the DS3 page
+const STATK = ["str", "dex", "int", "fai", "arc"];
+function save() {
+  const o = readOpts(true), h = new URLSearchParams();
+  h.set("mode", o.mode);
+  if (o.mode === "opt") for (const k of ["cls", "sl", "vig", "mnd", "end"]) h.set(k, o[k]);
+  else o.stats.forEach((v, i) => h.set(STATK[i], v));
+  if (o.target !== "flat") h.set("boss", D.bosses[+o.target].n); else h.set("def", o.def);
+  for (const m of ["1h", "2h", "ps"]) if (!o.moves.includes(m)) h.set("m_" + m, "0");
+  if ($("#q").value) h.set("q", $("#q").value);
+  if (o.fcls) h.set("wc", o.fcls);
+  if (o.finf) h.set("inf", o.finf);
+  if (!$("#bestOnly").checked) h.set("best", "0");
+  history.replaceState(null, "", "#" + h.toString());
+}
+function load() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.has("mode")) return;
+  mode = h.get("mode") === "fixed" ? "fixed" : "opt";
+  const setv = (id, v) => { const el = $("#" + id); if (v == null) return;
+    if (el.tagName === "SELECT" && ![...el.options].some((op) => op.value === v)) return; el.value = v; };
+  for (const k of ["cls", "sl", "vig", "mnd", "end", "def", "q"]) setv(k, h.get(k));
+  setv("fcls", h.get("wc")); setv("finf", h.get("inf"));
+  document.querySelectorAll(".st").forEach((x, i) => { if (h.has(STATK[i])) x.value = h.get(STATK[i]); });
+  if (h.has("boss")) { const i = D.bosses.findIndex((b) => b.n === h.get("boss")); if (i >= 0) $("#target").value = String(i); }
+  document.querySelectorAll("#moves input").forEach((x) => { x.checked = h.get("m_" + x.value) !== "0"; });
+  $("#bestOnly").checked = h.get("best") !== "0";
+}
 
 function budgetInfo() {
   const c = CLASSES[$("#cls").value];
@@ -270,7 +301,7 @@ function readOpts(raw) {
   if (raw) return o;
   const b = budgetInfo();
   return Object.assign(o, { base: b.base, budget: b.budget, boss: t === "flat" ? null : +t,
-    classes: o.fcls ? [o.fcls] : null, infs: o.finf ? [o.finf] : null });
+    classes: null, infs: null });
 }
 
 function target(o) { return o.boss == null ? ER.flatTarget(o.def) : D.bosses[o.boss]; }
@@ -305,7 +336,7 @@ function run() {
     if (ev.data.id !== reqId) return;
     if (ev.data.progress != null) { $("#prog i").style.width = (ev.data.progress * 100).toFixed(0) + "%"; return; }
     $("#prog").hidden = true;
-    rows = ev.data.rows; shown = 50; openK = null; render();
+    rows = ev.data.rows; showAll = false; openK = null; render();
   };
 }
 
@@ -314,27 +345,35 @@ const wiki = (n) => "https://eldenring.wiki.fextralife.com/" + encodeURIComponen
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function render() {
-  const q = $("#q").value.trim().toLowerCase();
-  const list = q ? rows.filter((r) => D.weapons[r.k].n.toLowerCase().includes(q)) : rows;
+  const q = $("#q").value.trim().toLowerCase(), fc = $("#fcls").value, fi = $("#finf").value, bestOnly = $("#bestOnly").checked;
+  let list = rows;
+  if (bestOnly) { const seen = new Set(); list = list.filter((r) => { const n = D.weapons[r.k].n; return !seen.has(n) && seen.add(n); }); }
+  let shownL = list.map((r, i) => [i + 1, r]).filter(([, r]) => { const w = D.weapons[r.k];
+    return (!q || w.n.toLowerCase().includes(q)) && (!fc || w.c === fc) && (!fi || w.i === fi); });
+  const total = shownL.length;
+  if (!showAll) shownL = shownL.slice(0, 100);
   const o = readOpts();
-  $("#title").textContent = o.boss == null ? `Ranking vs defense ${o.def}` : `Ranking vs ${D.bosses[o.boss].n}`;
-  $("#status").textContent = `${list.length} weapon/infusion combinations`;
-  const max = list.length ? list[0].dps : 1;
+  $("#title").textContent = o.boss == null ? `Rune level ${o.mode === "opt" ? $("#sl").value : "(your stats)"}, max upgrade, defense ${o.def}` : `Ranking vs ${D.bosses[o.boss].n}`;
+  $("#status").textContent = `${total} ${bestOnly ? "weapons" : "weapon/infusion combos"}`;
+  const max = rows.length ? rows[0].dps : 1;
   const html = [];
-  list.slice(0, shown).forEach((r, i) => {
-    const w = D.weapons[r.k];
-    const parts = o.boss != null ? `<small class="parts">${r.ttk ? r.ttk.toFixed(1) + " s to kill" : ""}${r.bleed ? " · bleed " + fmt(r.bleed) : ""}${r.frost ? " · frost " + fmt(r.frost) : ""}</small>` : "";
-    html.push(`<tr class="main${openK === r.k ? " open" : ""}" data-k="${r.k}">
-      <td class="rank"><span class="tw">›</span> ${i + 1}</td>
-      <td class="w"><a>${esc(w.n)}</a> <a class="wk" href="${wiki(w.n)}" target="_blank" rel="noopener" title="Fextralife wiki">↗</a><small>${w.i} · ${w.c} +${w.up}<span class="show-s"> · ${ER.MOVES[r.move]}</span></small></td>
-      <td class="hide-s"><span class="mv">${ER.MOVES[r.move]}</span></td>
-      <td class="n dpsc"><div class="dps"><i style="width:${(r.dps / max * 100).toFixed(1)}%"></i><span>${fmt(r.dps)}</span>${parts}</div></td>
-      <td class="hide-s hide-t">${r.stats.join("/")}</td>
-      <td class="n hide-s hide-t">${fmt(r.ar.reduce((a, b) => a + b, 0))}</td></tr>`);
-    if (openK === r.k) html.push(`<tr class="detail"><td colspan="6">${detail(r)}</td></tr>`);
-  });
-  $("#rows").innerHTML = html.join("") || `<tr><td colspan="6" class="empty">Nothing to show.</td></tr>`;
-  $("#more").hidden = list.length <= shown;
+  for (const [k, r] of shownL) {
+    const w = D.weapons[r.k], open = openK === r.k;
+    const secs = D.moves[w.m][r.move].reduce((a, s) => a + s[0], 0) / D.moves[w.m][r.move].length / 60;
+    const others = Object.keys(r.per).filter((m) => m !== r.move).map((m) => `${ER.MOVES[m]} ${fmt(r.per[m])}`).join(" · ");
+    const parts = o.boss != null ? `<small class="parts">${[r.bleed > 0.5 ? "bleed " + fmt(r.bleed) : "", r.frost > 0.5 ? "frost " + fmt(r.frost) : "", r.ttk ? "kill " + r.ttk.toFixed(1) + " s" : ""].filter(Boolean).join(" · ")}</small>` : "";
+    html.push(`<tr class="main${open ? " open" : ""}" data-k="${r.k}"><td class="rank"><span class="tw">›</span> ${k}</td>
+      <td class="w"><a href="${wiki(w.n)}" target="_blank" rel="noopener">${esc(w.n)}</a><small>${esc(w.i)} · ${esc(w.c)} +${w.up}<span class="show-s"> · ${ER.MOVES[r.move]}</span></small></td>
+      <td class="mvc hide-s"><span class="mv">${ER.MOVES[r.move]}</span>${others ? `<small>${others}</small>` : ""}</td>
+      <td class="n hide-s hide-m">${secs.toFixed(3)}</td>
+      <td class="n hide-s hide-m">${fmt(r.ar.reduce((a, b) => a + b, 0))}</td>
+      <td class="dps"><i style="width:${Math.max(2, r.dps / max * 100).toFixed(1)}%"></i><span>${fmt(r.dps)}</span>${parts}</td>
+      <td class="n">${r.stats.join("/")}</td></tr>`);
+    if (open) html.push(`<tr class="detail"><td colspan="7">${detail(r)}</td></tr>`);
+  }
+  $("#rows").innerHTML = html.join("") || `<tr><td colspan="7" class="empty">No weapon matches. With these stats nothing in the filter can be wielded, or the filter is too narrow.</td></tr>`;
+  $("#more").hidden = showAll || total <= 100;
+  $("#more").textContent = `Show all ${total}`;
   hookDetail();
 }
 
@@ -504,28 +543,20 @@ function init(data) {
   const cls = [...new Set(D.weapons.map((w) => w.c))].sort(), infs = [...new Set(D.weapons.map((w) => w.i))];
   $("#fcls").innerHTML += cls.map((c) => `<option>${c}</option>`).join("");
   $("#finf").innerHTML += infs.map((c) => `<option>${c}</option>`).join("");
-  const s = load();
-  if (s) {
-    mode = s.mode || "opt";
-    for (const id of ["cls", "sl", "vig", "mnd", "end", "target", "def", "fcls", "finf"]) {
-      const el = $("#" + id);
-      if (s[id] == null) continue;
-      if (el.tagName === "SELECT" && ![...el.options].some((op) => op.value === String(s[id]))) continue;
-      el.value = s[id];
-    }
-    if (s.stats) document.querySelectorAll(".st").forEach((x, i) => { x.value = s.stats[i]; });
-    if (s.moves) document.querySelectorAll("#moves input").forEach((x) => { x.checked = s.moves.includes(x.value); });
-  }
+  load();
   document.querySelectorAll("#mode button").forEach((b) => b.onclick = () => { mode = b.dataset.m; run(); });
   let tm = null;
   const later = () => { clearTimeout(tm); tm = setTimeout(run, 250); };
-  document.querySelectorAll("aside input:not(#q), aside select").forEach((x) => x.addEventListener("input", later));
-  $("#q").addEventListener("input", () => { shown = 50; render(); });
-  $("#more").onclick = () => { shown += 50; render(); };
+  const viewOnly = ["q", "fcls", "finf", "bestOnly"];
+  document.querySelectorAll("aside input, aside select").forEach((x) => {
+    if (viewOnly.includes(x.id)) x.addEventListener("input", () => { showAll = false; render(); save(); });
+    else x.addEventListener("input", later);
+  });
+  $("#more").onclick = () => { showAll = true; render(); };
   $("#rows").addEventListener("click", (ev) => {
-    if (ev.target.closest("a[href]")) return;            // wiki links open, don't toggle
     const tab = ev.target.closest(".tabs button");
     if (tab) { openMove = tab.dataset.move; render(); return; }
+    if (ev.target.closest("a") || ev.target.closest("tr.detail")) return;   // name = wiki link, row = detail
     const tr = ev.target.closest("tr.main");
     if (!tr) return;
     const k = +tr.dataset.k;
