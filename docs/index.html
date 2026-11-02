@@ -187,7 +187,7 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
       <div class="group">
         <div class="label">Rank by</div>
         <div class="seg" id="by" style="margin-bottom:12px">
-          <button data-by="dps" class="on">DPS</button>
+          <button data-by="dps" class="on">Damage per second</button>
           <button data-by="hit">Damage per attack</button>
         </div>
         <div class="label">Attacks</div>
@@ -221,7 +221,7 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
         <table>
           <thead><tr>
             <th>#</th><th>Weapon</th><th class="hide-s">Attack</th><th class="n hide-s hide-m">s / attack</th>
-            <th class="n hide-s hide-m">AR</th><th id="metricTh">DPS</th><th class="n"><span class="hide-s">Str/Dex/Int/Fai/Arc</span><span class="show-s">S/D/I/F/A</span></th>
+            <th class="n hide-s hide-m">AR</th><th id="metricTh">Damage / second</th><th class="n"><span class="hide-s">Str/Dex/Int/Fai/Arc</span><span class="show-s">S/D/I/F/A</span></th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -319,7 +319,7 @@ function updateSide() {
   $("#optBox").hidden = mode !== "opt"; $("#fixedBox").hidden = mode !== "fixed";
   document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
   document.querySelectorAll("#by button").forEach((b) => b.classList.toggle("on", b.dataset.by === by));
-  $("#metricTh").textContent = by === "hit" ? "Damage / attack" : "DPS";
+  $("#metricTh").textContent = by === "hit" ? "Damage / attack" : "Damage / second";
   const b = budgetInfo();
   const el = $("#budget");
   el.className = "budget" + (b.budget < 0 ? " bad" : "");
@@ -481,7 +481,7 @@ function detail(r) {
   const info = `<h3>${esc(w.n)} (${w.i}) · ${ER.MOVES[move]} · <a href="${wiki(w.n)}" target="_blank" rel="noopener">wiki ↗</a></h3>
       <div class="kv"><span>Stats</span><b>${res.stats.join(" / ")}</b><span>Attack rating</span><b>${ar}</b>
         <span>Requirements</span><b>${req || "none"}${w.pair ? " · paired (no 2H Str bonus)" : ""}</b><span>Status</span><b>${status}</b>
-        <span>DPS</span><b>${fmt(res.rate)}</b>
+        <span>Damage per second</span><b>${fmt(res.rate)}</b>
         <span>Damage per attack</span><b>${res.stepDmg.map(fmt).join(" → ")}</b></div>${boss}`;
   const chain = `<h3>Attack chain</h3>
       <p>${steps.length} steps, ${total} frames (${(total / 60).toFixed(2)} s), ${hits} hits. Each block is one step, as wide as its frames until the next attack can start; dots are hits.</p>
