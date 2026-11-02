@@ -44,8 +44,10 @@
     const steps = D.moves[w.m][key];
     const A = ar(D, w, st, key === "2h");
     let frames = 0, direct = 0, nh = 0;
+    const stepDmg = [];            // damage of each press as the game shows it (every hit rounded down)
     for (const [f, hits] of steps) {
       frames += f;
+      let sd = 0;
       for (const cands of hits) {
         nh++;
         let best = 0;
@@ -57,12 +59,15 @@
           }
           if (v > best) best = v;
         }
-        direct += best;
+        direct += best; sd += Math.floor(best);
       }
+      stepDmg.push(sd);
     }
     const secs = frames / 60, d = direct / secs;
-    const out = { dps: d, direct: d, bleed: 0, frost: 0, ttk: 0, procsB: 0, procsF: 0, ar: A, frames: steps.map((s) => s[0]), hits: steps.map((s) => s[1].length) };
-    if (!T.hp || d <= 0) return out;
+    const out = { dps: d, rate: d, hit: stepDmg[0], stepDmg, direct: d, bleed: 0, frost: 0, ttk: 0, procsB: 0, procsF: 0, ar: A, frames: steps.map((s) => s[0]), hits: steps.map((s) => s[1].length) };
+    // T.metric "hit": rank and optimize by the damage of one press (first attack of the chain) instead of DPS
+    const fin = (o) => { if (T.metric === "hit") { o.rate = o.dps; o.dps = o.hit; } return o; };
+    if (!T.hp || d <= 0) return fin(out);
     const hp = T.hp, rate = nh / secs, ev = [];
     if (w.b && T.bleed) {
       let luck = 1;
@@ -92,7 +97,7 @@
         if (left <= 0) break;
       }
     }
-    return Object.assign(out, { dps: hp / t, ttk: t, bleed: got.b / t, frost: got.f / t, procsB: n.b, procsF: n.f });
+    return fin(Object.assign(out, { dps: hp / t, ttk: t, bleed: got.b / t, frost: got.f / t, procsB: n.b, procsF: n.f }));
   }
 
   function need(w, key) {
@@ -118,7 +123,7 @@
     for (let i = 0; i < 5; i++) if (st[i] < nd[i]) { cost += nd[i] - st[i]; st[i] = nd[i]; }
     if (cost > budget) return null;
     let left = budget - cost;
-    const rel = relevant(w, T), flat = { df: T.df, mul: T.mul, hp: 0 };
+    const rel = relevant(w, T), flat = { df: T.df, mul: T.mul, hp: 0, metric: T.metric };
     const f = (s) => evaluate(D, w, s, key, flat).dps;
     let cur = f(st);
     const step = chunk || 1;

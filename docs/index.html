@@ -185,6 +185,11 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
       </div>
 
       <div class="group">
+        <div class="label">Rank by</div>
+        <div class="seg" id="by" style="margin-bottom:12px">
+          <button data-by="dps" class="on">DPS</button>
+          <button data-by="hit">Damage per attack</button>
+        </div>
         <div class="label">Attacks</div>
         <div class="checks" id="moves">
           <label><input type="checkbox" value="1h" checked>1H R1</label>
@@ -216,7 +221,7 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
         <table>
           <thead><tr>
             <th>#</th><th>Weapon</th><th class="hide-s">Attack</th><th class="n hide-s hide-m">s / attack</th>
-            <th class="n hide-s hide-m">AR</th><th>DPS</th><th class="n"><span class="hide-s">Str/Dex/Int/Fai/Arc</span><span class="show-s">S/D/I/F/A</span></th>
+            <th class="n hide-s hide-m">AR</th><th id="metricTh">DPS</th><th class="n"><span class="hide-s">Str/Dex/Int/Fai/Arc</span><span class="show-s">S/D/I/F/A</span></th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -237,7 +242,7 @@ table.ms tr.cur td{font-weight:650;color:var(--accent)}
   </footer>
 </div>
 
-<script src="calc.js?v=2"></script>
+<script src="calc.js?v=3"></script>
 <script>
 "use strict";
 const $ = (s) => document.querySelector(s);
@@ -250,6 +255,8 @@ const CLASSES = {   // level, [vig, mind, end], [str, dex, int, fai, arc]
   "Heavy Knight": [10, [14, 8, 17], [15, 11, 7, 8, 9]], "Knight of Idus": [7, [10, 12, 11], [13, 15, 8, 11, 6]],
 };   // read from CharaInitParam 3000-3011 (the last two came with the Tarnished Pack)
 const EL = ["Phys", "Mag", "Fire", "Ltn", "Holy"];
+let by = "dps";
+const ML = () => (by === "hit" ? "dmg" : "DPS");
 let D = null, worker = null, reqId = 0, rows = [], showAll = false, mode = "opt", openK = null;
 
 // inputs live in the address bar so a build can be shared, like the DS3 page
@@ -257,6 +264,7 @@ const STATK = ["str", "dex", "int", "fai", "arc"];
 function save() {
   const o = readOpts(true), h = new URLSearchParams();
   h.set("mode", o.mode);
+  if (by === "hit") h.set("by", "hit");
   if (o.mode === "opt") for (const k of ["cls", "sl", "vig", "mnd", "end"]) h.set(k, o[k]);
   else o.stats.forEach((v, i) => h.set(STATK[i], v));
   if (o.target !== "flat") h.set("boss", D.bosses[+o.target].n); else h.set("def", o.def);
@@ -271,6 +279,7 @@ function load() {
   const h = new URLSearchParams(location.hash.slice(1));
   if (!h.has("mode")) return;
   mode = h.get("mode") === "fixed" ? "fixed" : "opt";
+  by = h.get("by") === "hit" ? "hit" : "dps";
   const setv = (id, v) => { const el = $("#" + id); if (v == null) return;
     if (el.tagName === "SELECT" && ![...el.options].some((op) => op.value === v)) return; el.value = v; };
   for (const k of ["cls", "sl", "vig", "mnd", "end", "def", "q"]) setv(k, h.get(k));
@@ -300,15 +309,17 @@ function readOpts(raw) {
   };
   if (raw) return o;
   const b = budgetInfo();
-  return Object.assign(o, { base: b.base, budget: b.budget, boss: t === "flat" ? null : +t,
+  return Object.assign(o, { by, base: b.base, budget: b.budget, boss: t === "flat" ? null : +t,
     classes: null, infs: null });
 }
 
-function target(o) { return o.boss == null ? ER.flatTarget(o.def) : D.bosses[o.boss]; }
+function target(o) { return Object.assign({}, o.boss == null ? ER.flatTarget(o.def) : D.bosses[o.boss], { metric: by }); }
 
 function updateSide() {
   $("#optBox").hidden = mode !== "opt"; $("#fixedBox").hidden = mode !== "fixed";
   document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
+  document.querySelectorAll("#by button").forEach((b) => b.classList.toggle("on", b.dataset.by === by));
+  $("#metricTh").textContent = by === "hit" ? "Damage / attack" : "DPS";
   const b = budgetInfo();
   const el = $("#budget");
   el.className = "budget" + (b.budget < 0 ? " bad" : "");
@@ -361,7 +372,9 @@ function render() {
     const w = D.weapons[r.k], open = openK === r.k;
     const secs = D.moves[w.m][r.move].reduce((a, s) => a + s[0], 0) / D.moves[w.m][r.move].length / 60;
     const others = Object.keys(r.per).filter((m) => m !== r.move).map((m) => `${ER.MOVES[m]} ${fmt(r.per[m])}`).join(" · ");
-    const parts = o.boss != null ? `<small class="parts">${[r.bleed > 0.5 ? "bleed " + fmt(r.bleed) : "", r.frost > 0.5 ? "frost " + fmt(r.frost) : "", r.ttk ? "kill " + r.ttk.toFixed(1) + " s" : ""].filter(Boolean).join(" · ")}</small>` : "";
+    const pb = [by === "hit" ? fmt(r.rate) + " DPS" : "hit " + fmt(r.hit)];
+    if (o.boss != null) pb.push(r.bleed > 0.5 ? "bleed " + fmt(r.bleed) : "", r.frost > 0.5 ? "frost " + fmt(r.frost) : "", r.ttk ? "kill " + r.ttk.toFixed(1) + " s" : "");
+    const parts = `<small class="parts">${pb.filter(Boolean).join(" · ")}</small>`;
     html.push(`<tr class="main${open ? " open" : ""}" data-k="${r.k}"><td class="rank"><span class="tw">›</span> ${k}</td>
       <td class="w"><a href="${wiki(w.n)}" target="_blank" rel="noopener">${esc(w.n)}</a><small>${esc(w.i)} · ${esc(w.c)} +${w.up}<span class="show-s"> · ${ER.MOVES[r.move]}</span></small></td>
       <td class="mvc hide-s"><span class="mv">${ER.MOVES[r.move]}</span>${others ? `<small>${others}</small>` : ""}</td>
@@ -468,7 +481,8 @@ function detail(r) {
   const info = `<h3>${esc(w.n)} (${w.i}) · ${ER.MOVES[move]} · <a href="${wiki(w.n)}" target="_blank" rel="noopener">wiki ↗</a></h3>
       <div class="kv"><span>Stats</span><b>${res.stats.join(" / ")}</b><span>Attack rating</span><b>${ar}</b>
         <span>Requirements</span><b>${req || "none"}${w.pair ? " · paired (no 2H Str bonus)" : ""}</b><span>Status</span><b>${status}</b>
-        <span>DPS</span><b>${fmt(res.dps)}</b></div>${boss}`;
+        <span>DPS</span><b>${fmt(res.rate)}</b>
+        <span>Damage per attack</span><b>${res.stepDmg.map(fmt).join(" → ")}</b></div>${boss}`;
   const chain = `<h3>Attack chain</h3>
       <p>${steps.length} steps, ${total} frames (${(total / 60).toFixed(2)} s), ${hits} hits. Each block is one step, as wide as its frames until the next attack can start; dots are hits.</p>
       <svg class="chart" viewBox="0 0 ${SW} 50">${bars}</svg>`;
@@ -488,7 +502,7 @@ function detail(r) {
     const gap = best ? (pp.dps / best.dps - 1) * 100 : 0;
     return `<tr class="${rowsAt.get(p) ? "cur" : ""}"><td>${xLabel(d, p)}</td><td class="n">${pp.stats.join("/")}</td><td class="n">${fmt(pp.dps)}</td><td class="n">${gap > -0.05 ? "best" : gap.toFixed(1) + "%"}</td></tr>`;
   }).join("");
-  const capNote = lastPts < d.pts[d.pts.length - 1].p ? `<p>After ${xLabel(d, lastPts)} no stat raises this weapon's DPS any more; spend the rest on Vigor, Endurance and so on.</p>` : "";
+  const capNote = lastPts < d.pts[d.pts.length - 1].p ? `<p>After ${xLabel(d, lastPts)} no stat raises this weapon's ${by === "hit" ? "damage" : "DPS"} any more; spend the rest on Vigor, Endurance and so on.</p>` : "";
   return `${tabs}<div class="det">
     <div>
       <h3>Leveling path · ${ER.MOVES[move]}</h3>
@@ -502,7 +516,7 @@ function detail(r) {
     </div>
     <div>${info}
       <h3>Milestones</h3>
-      <table class="ms"><thead><tr><th>${d.opt ? "Level" : "Added"}</th><th class="n">Str/Dex/Int/Fai/Arc</th><th class="n">DPS</th><th class="n">gap</th></tr></thead><tbody>${ms}</tbody></table>
+      <table class="ms"><thead><tr><th>${d.opt ? "Level" : "Added"}</th><th class="n">Str/Dex/Int/Fai/Arc</th><th class="n">${ML()}</th><th class="n">gap</th></tr></thead><tbody>${ms}</tbody></table>
     </div></div>`;
 }
 
@@ -527,7 +541,7 @@ function hookDetail() {
     const pt = pl.getPointAtLength(lo);
     hv.setAttribute("x1", X); hv.setAttribute("x2", X); hv.setAttribute("visibility", "visible");
     dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y); dot.setAttribute("visibility", "visible");
-    out.textContent = `${xLabel(d, best.p)}: ${best.path.stats.join("/")} → ${fmt(best.path.dps)} DPS` + (best.best ? ` (best spread ${fmt(best.best)})` : "");
+    out.textContent = `${xLabel(d, best.p)}: ${best.path.stats.join("/")} → ${fmt(best.path.dps)} ${ML()}` + (best.best ? ` (best spread ${fmt(best.best)})` : "");
   };
   svg.addEventListener("pointermove", mv);
   svg.addEventListener("pointerdown", mv);
@@ -536,7 +550,7 @@ function hookDetail() {
 
 function init(data) {
   D = data;
-  worker = new Worker("worker.js?v=2");
+  worker = new Worker("worker.js?v=3");
   worker.postMessage({ data: D });
   $("#cls").innerHTML = Object.keys(CLASSES).map((c) => `<option>${c}</option>`).join("");
   $("#target").innerHTML = `<option value="flat">Flat defense</option>` + D.bosses.map((b, i) => `<option value="${i}">${esc(b.n)}</option>`).join("");
@@ -545,6 +559,7 @@ function init(data) {
   $("#finf").innerHTML += infs.map((c) => `<option>${c}</option>`).join("");
   load();
   document.querySelectorAll("#mode button").forEach((b) => b.onclick = () => { mode = b.dataset.m; run(); });
+  document.querySelectorAll("#by button").forEach((b) => b.onclick = () => { by = b.dataset.by; run(); });
   let tm = null;
   const later = () => { clearTimeout(tm); tm = setTimeout(run, 250); };
   const viewOnly = ["q", "fcls", "finf", "bestOnly"];

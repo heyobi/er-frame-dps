@@ -1,11 +1,11 @@
 // Ranks every weapon off the main thread so the page stays responsive.
-importScripts("calc.js?v=2");
+importScripts("calc.js?v=3");
 let D = null;
 onmessage = (ev) => {
   const m = ev.data;
   if (m.data) { D = m.data; return; }
   const { id, opts } = m;
-  const T = opts.boss != null ? D.bosses[opts.boss] : ER.flatTarget(opts.def);
+  const T = Object.assign({}, opts.boss != null ? D.bosses[opts.boss] : ER.flatTarget(opts.def), { metric: opts.by });
   const rows = [];
   const list = D.weapons;
   for (let k = 0; k < list.length; k++) {
@@ -20,7 +20,7 @@ onmessage = (ev) => {
       if (!best || r.dps > best.dps) best = r;
     }
     if (best) rows.push({ k, per, dps: best.dps, move: best.move, stats: best.stats, ar: best.ar, direct: best.direct,
-                          bleed: best.bleed, frost: best.frost, ttk: best.ttk, procsB: best.procsB, procsF: best.procsF });
+                          hit: best.hit, rate: best.rate, bleed: best.bleed, frost: best.frost, ttk: best.ttk, procsB: best.procsB, procsF: best.procsF });
     if (k % 100 === 0) postMessage({ id, progress: k / list.length });
   }
   rows.sort((a, b) => b.dps - a.dps);
